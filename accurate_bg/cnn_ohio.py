@@ -125,7 +125,6 @@ def test_ckpt(high_fid_data):
     y = graph.get_tensor_by_name("y:0")
     d = high_fid_data.test()
     err = sess.run(loss, feed_dict={x: d[0], y_: d[1], weights: d[2]})
-    print("Test err: %f" % (err))
     y_pred = sess.run(y, feed_dict={x: d[0]})
     return err, np.vstack((d[1][:, 0], y_pred[:, -1])).T
 

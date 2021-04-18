@@ -9,6 +9,7 @@ def main():
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
     pid_year = {2018: pid_2018, 2020: pid_2020}
+    outdir = "../ohio_results"
     train_data = []
     for year in list(pid_year.keys()):
         pids = pid_year[year]
@@ -37,16 +38,22 @@ def main():
     # argv = (4, 4, 10, 2, 1e-3, 64, 20, 1e-4)
     # regressor(train_dataset, *argv)
     # test on patients data TODO
+    errs = []
     for year in list(pid_year.keys()):
         pids = pid_year[year]
         for pid in pids:
             test_dataset = CGMSDataSeg(
                 "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
             )
+            test_dataset.set_cutpoint = 1
             test_dataset.reset(
                 sampling_horizon, prediction_horizon, scale, 0.01, False, outtype, 1
             )
-            test_ckpt(test_dataset)
+            err, labels = test_ckpt(test_dataset)
+            np.savetxt(f"{outdir}/{pid}.txt", labels, fmt="%.4f %.4f")
+            errs.append([pid, err])
+    errs = np.array(errs)
+    np.savetxt(f"{outdir}/errors.txt", errs, fmt="%d %.4f")
 
 
 if __name__ == "__main__":
