@@ -1,4 +1,5 @@
 import numpy as np
+from cgms_data_seg import CGMSDataSeg
 from data_reader import DataReader
 
 
@@ -15,9 +16,31 @@ def main():
                 "ohio", f"../data/OhioT1DM/{year}/train/{pid}-ws-training.xml", 5
             )
             train_data += reader.read()
-    # print(train_data)
-    # print(len(train_data))
-    # train on patients data TODO
+    print(f"Total training time sequences: {len(train_data)}")
+    # a pseudo dataset instance
+    train_dataset = CGMSDataSeg(
+        "ohio", "../data/OhioT1DM/2018/train/559-ws-training.xml", 5
+    )
+    train_dataset.data = train_data
+    train_dataset.set_cutpoint = -1
+    sampling_horizon = 7
+    prediction_horizon = 6
+    scale = 0.01
+    outtype = "Same"
+    # 100 is dumb if set_cutpoint is used
+    train_dataset.reset(
+        sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
+    )
+    # test on patients data TODO
+    for year in list(pid_year.keys()):
+        pids = pid_year[year]
+        for pid in pids:
+            test_dataset = CGMSDataSeg(
+                "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
+            )
+            test_dataset.reset(
+                sampling_horizon, prediction_horizon, scale, 0.0, False, outtype, 1
+            )
 
 
 if __name__ == "__main__":
