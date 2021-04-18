@@ -1,6 +1,6 @@
 import numpy as np
 from cgms_data_seg import CGMSDataSeg
-from cnn import regressor, regressor_transfer
+from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
@@ -32,9 +32,11 @@ def main():
     train_dataset.reset(
         sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
     )
-    # test on patients data TODO
+    # train on training dataset
     # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
-    argv = (4, 4, 10, 2, 1e-3, 64, 50, 1e-4)
+    # argv = (4, 4, 10, 2, 1e-3, 64, 20, 1e-4)
+    # regressor(train_dataset, *argv)
+    # test on patients data TODO
     for year in list(pid_year.keys()):
         pids = pid_year[year]
         for pid in pids:
@@ -44,7 +46,7 @@ def main():
             test_dataset.reset(
                 sampling_horizon, prediction_horizon, scale, 0.01, False, outtype, 1
             )
-            erro, labs = regressor(train_dataset, test_dataset, *argv)
+            test_ckpt(test_dataset)
 
 
 if __name__ == "__main__":

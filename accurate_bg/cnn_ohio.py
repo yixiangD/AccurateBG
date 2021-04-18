@@ -16,7 +16,6 @@ from helper import (
 
 def regressor(
     low_fid_data,
-    high_fid_data,
     k_size,
     nblock,
     nn_size,
@@ -28,10 +27,6 @@ def regressor(
 ):
 
     tf.reset_default_graph()
-    batch_size = min(high_fid_data.train_n, batch_size)
-    learn_rate = tf.constant(learning_rate, name="learn_rate")
-    print(f"Learning rate: {learn_rate}")
-
     sampling_horizon = low_fid_data.sampling_horizon
     feature_size = 0
     if low_fid_data.feature is not None:
@@ -108,22 +103,30 @@ def regressor(
     sess = tf.compat.v1.Session()
     saver = tf.compat.v1.train.Saver()
     sess.run(tf.compat.v1.global_variables_initializer())
-
     for i in range(epoch):
-        # low_fid_data.undersampling(0.8, 'Same')
-        # low_fid_data.mixup('Same')
-        # low_fid_data.gan_generator()
-        # low_fid_data.gaussian_noise('Same')
         for _ in range(int(low_fid_data.train_n / batch_size)):
             d = low_fid_data.train_next_batch(batch_size)
             sess.run(train, feed_dict={x: d[0], y_: d[1], weights: d[2]})
-        d = high_fid_data.test()
         err = sess.run(loss, feed_dict={x: d[0], y_: d[1], weights: d[2]})
-        print("Epoch %d, test relative err: %f" % (i, err))
-        # print('Epoch %d, test RMSE: %f' % (i, err ** 0.5 / low_fid_data.scale))
-    y_pred = sess.run(y, feed_dict={x: d[0]})
+        print("Epoch %d, train err: %f" % (i, err))
     saver.save(sess, "pretrain")
-    # return err ** 0.5 / high_fid_data.scale, np.vstack((d[1][:, 0], y_pred[:, -1])).T
+
+
+def test_ckpt(high_fid_data):
+    sess = tf.Session()
+    saver = tf.train.import_meta_graph("pretrain.meta")
+    saver.restore(sess, tf.train.latest_checkpoint("./"))
+
+    graph = tf.get_default_graph()
+    x = graph.get_tensor_by_name("x:0")
+    weights = graph.get_tensor_by_name("weights:0")
+    loss = graph.get_tensor_by_name("loss:0")
+    y_ = graph.get_tensor_by_name("y_:0")
+    y = graph.get_tensor_by_name("y:0")
+    d = high_fid_data.test()
+    err = sess.run(loss, feed_dict={x: d[0], y_: d[1], weights: d[2]})
+    print("Test err: %f" % (err))
+    y_pred = sess.run(y, feed_dict={x: d[0]})
     return err, np.vstack((d[1][:, 0], y_pred[:, -1])).T
 
 
