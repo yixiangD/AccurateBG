@@ -127,4 +127,10 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# my stuff
 time-gan/data/single_hypo.txt
+pretrain.*
+checkpoint
+*.txt
+data/

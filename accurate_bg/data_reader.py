@@ -15,6 +15,11 @@ class DataReader(object):
     """
 
     def __init__(self, fmt, filepath, sampling_interval):
+        """
+        fmt: string
+        filepath: string, path of file
+        sampling_interval: float, int or datetime.timedelta, in minutes
+        """
         if fmt not in ["direcnet", "VA", "VA1", "VA2", "direcnet_pid", "ohio"]:
             raise ValueError("Wrong data format")
         self.fmt = fmt
@@ -22,6 +27,9 @@ class DataReader(object):
         if type(sampling_interval) is datetime.timedelta:
             self.interval = sampling_interval.seconds / 60
             self.interval_timedelta = sampling_interval
+        elif type(sampling_interval) in [float, int]:
+            self.interval = sampling_interval
+            self.interval_timedelta = datetime.timedelta(minutes=sampling_interval)
 
     def read(self):
         """
