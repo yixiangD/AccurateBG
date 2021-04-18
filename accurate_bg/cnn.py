@@ -29,7 +29,6 @@ def regressor(
 
     tf.reset_default_graph()
     batch_size = min(high_fid_data.train_n, batch_size)
-
     learn_rate = tf.constant(learning_rate, name="learn_rate")
     print(f"Learning rate: {learn_rate}")
 

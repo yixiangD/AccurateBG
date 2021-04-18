@@ -1,5 +1,6 @@
 import numpy as np
 from cgms_data_seg import CGMSDataSeg
+from cnn import regressor, regressor_transfer
 from data_reader import DataReader
 
 
@@ -32,6 +33,8 @@ def main():
         sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
     )
     # test on patients data TODO
+    # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
+    argv = (4, 4, 10, 2, 1e-3, 64, 50, 1e-4)
     for year in list(pid_year.keys()):
         pids = pid_year[year]
         for pid in pids:
@@ -39,8 +42,9 @@ def main():
                 "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
             )
             test_dataset.reset(
-                sampling_horizon, prediction_horizon, scale, 0.0, False, outtype, 1
+                sampling_horizon, prediction_horizon, scale, 0.01, False, outtype, 1
             )
+            erro, labs = regressor(train_dataset, test_dataset, *argv)
 
 
 if __name__ == "__main__":
