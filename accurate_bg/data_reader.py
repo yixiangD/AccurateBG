@@ -19,7 +19,9 @@ class DataReader(object):
             raise ValueError("Wrong data format")
         self.fmt = fmt
         self.filepath = filepath
-        self.interval = sampling_interval
+        if type(sampling_interval) is datetime.timedelta:
+            self.interval = sampling_interval.seconds / 60
+            self.interval_timedelta = sampling_interval
 
     def read(self):
         """
@@ -59,9 +61,9 @@ class DataReader(object):
             bag.append([d[0]])
             for i in range(1, len(d)):
                 dt = d[i][0] - bag[-1][-1][0]
-                if dt == self.interval:
+                if dt == self.interval_timedelta:
                     bag[-1].append(d[i])
-                elif dt > self.interval:
+                elif dt > self.interval_timedelta:
                     bag.append([d[i]])
                 elif dt == zero_seconds:
                     bag[-1][-1] = (d[i][0], (bag[-1][-1][1] + d[i][1]) / 2)
@@ -92,11 +94,7 @@ class DataReader(object):
             res[pid].append([float(item["SensorGLU"][0])])
             for i in range(1, len(item.index)):
                 delt = item["Time"][i] - item["Time"][i - 1]
-                # try:
-                # flag = delt <= self.interval
-                # except:
-                # flag = delt <= datetime.timedelta(minutes=self.interval)
-                if delt <= datetime.timedelta(minutes=self.interval):
+                if delt <= self.interval_timedelta:
                     res[pid][-1].append(float(item["SensorGLU"][i]))
                 else:
                     res[pid].append([float(item["SensorGLU"][i])])
@@ -122,7 +120,7 @@ class DataReader(object):
                 if contents[2] == "Calibration":
                     continue
                 t = datetime.datetime.strptime(contents[1], "%Y-%m-%dT%H:%M:%S")
-                if abs(t - t0 - self.interval) > interval_eps:
+                if abs(t - t0 - self.interval_timedelta) > interval_eps:
                     data.append([])
                 data[-1].append(
                     400
@@ -153,7 +151,7 @@ class DataReader(object):
         output.append([data["Sensor Glucose"].iloc[0]])
         t0 = data["Time"].iloc[0]
         for i in data.index[1:]:
-            if abs(data["Time"][i] - t0 - self.interval) > interval_eps:
+            if abs(data["Time"][i] - t0 - self.interval_timedelta) > interval_eps:
                 output.append([])
             output[-1].append(data["Sensor Glucose"][i])
             t0 = data["Time"][i]
@@ -185,11 +183,7 @@ class DataReader(object):
                 t1 = datetime.datetime.combine(datetime.date.min, item["Time"][i])
                 t0 = datetime.datetime.combine(datetime.date.min, item["Time"][i - 1])
                 delt = t1 - t0
-                # try:
-                # flag = delt <= self.interval
-                # except:
-                # flag = delt <= datetime.timedelta(minutes=self.interval)
-                if delt <= datetime.timedelta(minutes=self.interval):
+                if delt <= self.interval_timedelta:
                     res[pid][-1].append(float(item["Sensor Glucose"][i]))
                 else:
                     res[pid].append([float(item["Sensor Glucose"][i])])
@@ -216,7 +210,7 @@ class DataReader(object):
                 t1 = datetime.datetime.strptime(entry["ts"], "%d-%m-%Y %H:%M:%S")
                 t0 = datetime.datetime.strptime(last_entry["ts"], "%d-%m-%Y %H:%M:%S")
                 delt = t1 - t0
-                if delt <= datetime.timedelta(minutes=self.interval):
+                if delt <= self.interval_timedelta:
                     res[-1].append(float(entry["value"]))
                 else:
                     res.append([float(entry["value"])])
