@@ -178,7 +178,7 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
         # print('Epoch %d, test RMSE: %f' % (i, err ** 0.5 / high_fid_data.scale))
     y_pred = sess.run(y, feed_dict={x: d[0]})
     # return err ** 0.5 / high_fid_data.scale, np.reshape(y_pred[:, -1], (-1, 1))
-    return err, np.reshape(y_pred[:, -1], (-1, 1))
+    return err, np.vstack((d[1][:, 0], y_pred[:, -1])).T
 
 
 def classifier(

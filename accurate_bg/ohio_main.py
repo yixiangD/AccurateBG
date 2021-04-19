@@ -29,14 +29,15 @@ def personalized_train_ohio(epoch):
     prediction_horizon = 12
     scale = 0.01
     outtype = "Same"
+    batch_size = 64
     # train on training dataset
     # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
-    argv = (4, 4, 10, 2, 1e-3, 64, epoch, 1e-4)
+    argv = (4, 4, 10, 2, 1e-3, batch_size, epoch, 1e-4)
     # test on patients data
     outdir = f"../ohio_results/ph_{prediction_horizon}"
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-    errs = []
+    all_errs = []
     for year in list(pid_year.keys()):
         pids = pid_year[year]
         for pid in pids:
@@ -60,14 +61,25 @@ def personalized_train_ohio(epoch):
                 sampling_horizon, prediction_horizon, scale, 0.01, False, outtype, 1
             )
             err, labels = test_ckpt(test_dataset)
-            np.savetxt(f"{outdir}/{pid}.txt", labels, fmt="%.4f %.4f")
-            errs.append([pid, err])
-    errs = np.array(errs)
-    np.savetxt(f"{outdir}/errors.txt", errs, fmt="%d %.4f")
+            errs = [err]
+            transfer_res = [labels]
+            for i in range(1, 4):
+                err, labels = regressor_transfer(test_dataset, batch_size, epoch)
+                errs.append(err)
+                transfer_res.append(labels)
+            transfer_res = np.concatenate(transfer_res, axis=1)
+            np.savetxt(
+                f"{outdir}/{pid}.txt",
+                transfer_res,
+                fmt="%.4f %.4f %.4f %.4f %.4f %.4f %.4f %.4f",
+            )
+            all_errs.append([pid] + errs)
+    all_errs = np.array(all_errs)
+    np.savetxt(f"{outdir}/errors.txt", all_errs, fmt="%d %.4f %.4f %.4f %.4f")
 
 
 def train_ohio(train, epoch):
-    # read in all patients data TODO
+    # read in all patients data
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
     pid_year = {2018: pid_2018, 2020: pid_2020}
@@ -99,7 +111,7 @@ def train_ohio(train, epoch):
     if train:
         argv = (4, 4, 10, 2, 1e-3, 64, epoch, 1e-4)
         regressor(train_dataset, *argv)
-    # test on patients data TODO
+    # test on patients data
     outdir = f"../ohio_results/ph_{prediction_horizon}"
     if not os.path.exists(outdir):
         os.mkdir(outdir)
@@ -124,7 +136,7 @@ def train_ohio(train, epoch):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--train", action="store_true")
-    parser.add_argument("--epoch", type=int, default=10)
+    parser.add_argument("--epoch", type=int, default=2)
     args = parser.parse_args()
 
     # train_ohio(args.train, args.epoch)
