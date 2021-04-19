@@ -1,15 +1,17 @@
+import argparse
+import os
+
 import numpy as np
 from cgms_data_seg import CGMSDataSeg
 from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
-def main():
+def train_ohio(train, epoch):
     # read in all patients data TODO
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
     pid_year = {2018: pid_2018, 2020: pid_2020}
-    outdir = "../ohio_results"
     train_data = []
     for year in list(pid_year.keys()):
         pids = pid_year[year]
@@ -26,7 +28,7 @@ def main():
     train_dataset.data = train_data
     train_dataset.set_cutpoint = -1
     sampling_horizon = 7
-    prediction_horizon = 6
+    prediction_horizon = 12
     scale = 0.01
     outtype = "Same"
     # 100 is dumb if set_cutpoint is used
@@ -35,9 +37,13 @@ def main():
     )
     # train on training dataset
     # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
-    # argv = (4, 4, 10, 2, 1e-3, 64, 20, 1e-4)
-    # regressor(train_dataset, *argv)
+    if train:
+        argv = (4, 4, 10, 2, 1e-3, 64, epoch, 1e-4)
+        regressor(train_dataset, *argv)
     # test on patients data TODO
+    outdir = f"../ohio_results/ph_{prediction_horizon}"
+    if not os.path.exists(outdir):
+        os.mkdir(outdir)
     errs = []
     for year in list(pid_year.keys()):
         pids = pid_year[year]
@@ -54,6 +60,15 @@ def main():
             errs.append([pid, err])
     errs = np.array(errs)
     np.savetxt(f"{outdir}/errors.txt", errs, fmt="%d %.4f")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train", action="store_true")
+    parser.add_argument("--epoch", type=int, default=10)
+    args = parser.parse_args()
+
+    train_ohio(args.train, args.epoch)
 
 
 if __name__ == "__main__":
