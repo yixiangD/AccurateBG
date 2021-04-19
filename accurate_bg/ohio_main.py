@@ -52,19 +52,29 @@ def personalized_train_ohio(epoch):
                 sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
             )
             regressor(train_dataset, *argv)
-            # fine-tune on personal data TODO
-            test_dataset = CGMSDataSeg(
+            # fine-tune on personal data
+            target_test_dataset = CGMSDataSeg(
                 "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
             )
-            test_dataset.set_cutpoint = 1
-            test_dataset.reset(
+            target_test_dataset.set_cutpoint = 1
+            target_test_dataset.reset(
                 sampling_horizon, prediction_horizon, scale, 0.01, False, outtype, 1
             )
-            err, labels = test_ckpt(test_dataset)
+            target_train_dataset = CGMSDataSeg(
+                "ohio", f"../data/OhioT1DM/{year}/train/{pid}-ws-training.xml", 5
+            )
+
+            target_train_dataset.set_cutpoint = -1
+            target_train_dataset.reset(
+                sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
+            )
+            err, labels = test_ckpt(target_test_dataset)
             errs = [err]
             transfer_res = [labels]
             for i in range(1, 4):
-                err, labels = regressor_transfer(test_dataset, batch_size, epoch)
+                err, labels = regressor_transfer(
+                    target_train_dataset, target_test_dataset, batch_size, epoch, i
+                )
                 errs.append(err)
                 transfer_res.append(labels)
             transfer_res = np.concatenate(transfer_res, axis=1)

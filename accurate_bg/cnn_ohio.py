@@ -129,7 +129,7 @@ def test_ckpt(high_fid_data):
     return err, np.vstack((d[1][:, 0], y_pred[:, -1])).T
 
 
-def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
+def regressor_transfer(train_dataset, test_dataset, batch_size, epoch, option=1):
     print("------------------in transfer----------------------")
     """
     transfer learning:
@@ -169,10 +169,10 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
         return
 
     for i in range(epoch):
-        for _ in range(int(high_fid_data.train_n / batch_size)):
-            d = high_fid_data.train_next_batch(batch_size)
+        for _ in range(int(train_dataset.train_n / batch_size)):
+            d = train_dataset.train_next_batch(batch_size)
             sess.run(optimizer, feed_dict={x: d[0], y_: d[1], weights: d[2]})
-        d = high_fid_data.test()
+        d = test_dataset.test()
         err = sess.run(loss, feed_dict={x: d[0], y_: d[1], weights: d[2]})
         print("Epoch %d, test relative err: %f" % (i, err))
         # print('Epoch %d, test RMSE: %f' % (i, err ** 0.5 / high_fid_data.scale))
