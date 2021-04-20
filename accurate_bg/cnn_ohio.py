@@ -24,6 +24,7 @@ def regressor(
     batch_size,
     epoch,
     beta,
+    loss_type="mae",
 ):
 
     tf.reset_default_graph()
@@ -75,12 +76,22 @@ def regressor(
     y_ = tf.compat.v1.placeholder(tf.float32, [None, sampling_horizon], name="y_")
 
     weights = tf.compat.v1.placeholder(tf.float32, [sampling_horizon], name="weights")
-    # loss = tf.compat.v1.losses.mean_squared_error(
-    #    y_, y, weights=tf.expand_dims(weights, axis=0),
-    #    reduction=tf.compat.v1.losses.Reduction.MEAN)
-    # loss = tf.compat.v1.keras.losses.MeanAbsolutePercentageError()(y_[:, 0], y[:, -1])
-    loss = tf.compat.v1.keras.losses.MAE(y_[:, 0], y[:, -1])
-    # loss = tf.math.reduce_mean((y_[:, 0] - y[:, -1])**2 / y_[:, 0]**2)
+    assert loss_type in ["mse", "mape", "mae", "relative_mse"]
+    if loss_type == "mse":
+        loss = tf.compat.v1.losses.mean_squared_error(
+            y_,
+            y,
+            weights=tf.expand_dims(weights, axis=0),
+            reduction=tf.compat.v1.losses.Reduction.MEAN,
+        )
+    elif loss_type == "mape":
+        loss = tf.compat.v1.keras.losses.MeanAbsolutePercentageError()(
+            y_[:, 0], y[:, -1]
+        )
+    elif loss_type == "mae":
+        loss = tf.compat.v1.keras.losses.MAE(y_[:, 0], y[:, -1])
+    elif loss_type == "relative_mse":
+        loss = tf.math.reduce_mean((y_[:, 0] - y[:, -1]) ** 2 / y_[:, 0] ** 2)
 
     # add L2 regularization
     L2_var = [

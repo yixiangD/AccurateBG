@@ -7,7 +7,7 @@ from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
-def personalized_train_ohio(epoch):
+def personalized_train_ohio(epoch, l_type="mae"):
     # read in all patients data
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
@@ -34,7 +34,7 @@ def personalized_train_ohio(epoch):
     # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
     argv = (4, 4, 10, 2, 1e-3, batch_size, epoch, 1e-4)
     # test on patients data
-    outdir = f"../ohio_results/ph_{prediction_horizon}"
+    outdir = f"../ohio_results/ph_{prediction_horizon}_{l_type}"
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     all_errs = []
@@ -51,7 +51,7 @@ def personalized_train_ohio(epoch):
             train_dataset.reset(
                 sampling_horizon, prediction_horizon, scale, 100, False, outtype, 1
             )
-            regressor(train_dataset, *argv)
+            regressor(train_dataset, *argv, l_type)
             # fine-tune on personal data
             target_test_dataset = CGMSDataSeg(
                 "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
@@ -150,7 +150,8 @@ def main():
     args = parser.parse_args()
 
     # train_ohio(args.train, args.epoch)
-    personalized_train_ohio(args.epoch)
+    for l_type in ["mse", "mape", "mae", "relative_mse"]:
+        personalized_train_ohio(args.epoch, l_type)
 
 
 if __name__ == "__main__":
