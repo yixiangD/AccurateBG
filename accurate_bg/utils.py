@@ -88,7 +88,7 @@ def compare_result(l_type):
         print(col, new_df.index[new_df["Paper ID"] == "ours"])
 
 
-def compare_only_bg_result(l_type, transfer=2):
+def compare_only_bg_result(l_type="mae", transfer=2):
     res_30 = get_result(l_type, 6, transfer)
     res_60 = get_result(l_type, 12, transfer)
     res = pd.merge(res_30, res_60, how="left", on="PID")
@@ -101,16 +101,14 @@ def compare_only_bg_result(l_type, transfer=2):
         df = pd.read_excel(path, sheet_name=p)
         result[p + " et al."] = df.mean().to_numpy()[1:]
     result = pd.DataFrame(result)
+    result.to_csv("../ohio_results/comparison.csv", float_format="%.4f", index=False)
+    print(result)
     print(result.sum())
 
 
 def main():
     # get_pbp_result()
-    for l_type in ["mse", "mape", "mae", "relative_mse"]:
-        print(l_type)
-        for i in range(4):
-            print(i)
-            compare_only_bg_result(l_type, i)
+    compare_only_bg_result()
     exit()
     # compare_result("mae")
     exit()

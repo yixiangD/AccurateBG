@@ -20,7 +20,15 @@ def personalized_train_ohio(epoch, ph, l_type="mae"):
                 "ohio", f"../data/OhioT1DM/{year}/train/{pid}-ws-training.xml", 5
             )
             train_data[pid] = reader.read()
-    print(f"Total training time sequences: {len(train_data)}")
+    # add test data of 2018 patient
+    use_2018_test = True
+    test_data_2018 = []
+    for pid in pid_2018:
+        reader = DataReader(
+            "ohio", f"../data/OhioT1DM/2018/test/{pid}-ws-testing.xml", 5
+        )
+        test_data_2018 += reader.read()
+
     # a dumb dataset instance
     train_dataset = CGMSDataSeg(
         "ohio", "../data/OhioT1DM/2018/train/559-ws-training.xml", 5
@@ -47,8 +55,11 @@ def personalized_train_ohio(epoch, ph, l_type="mae"):
             # 100 is dumb if set_cutpoint is used
             train_pids = set(pid_2018 + pid_2020) - set([pid])
             local_train_data = []
+            if use_2018_test:
+                local_train_data += test_data_2018
             for k in train_pids:
                 local_train_data += train_data[k]
+            print(f"Pretrain data: {sum([sum(x) for x in local_train_data])}")
             train_dataset.data = local_train_data
             train_dataset.set_cutpoint = -1
             train_dataset.reset(
@@ -152,7 +163,7 @@ def main():
     parser.add_argument("--epoch", type=int, default=2)
     args = parser.parse_args()
 
-    for l_type in ["mse", "mape", "mae", "relative_mse"]:
+    for l_type in ["mae", "mse", "mape", "relative_mse"]:
         for ph in [6, 12]:
             personalized_train_ohio(args.epoch, ph, l_type)
 
