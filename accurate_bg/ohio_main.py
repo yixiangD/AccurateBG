@@ -7,7 +7,7 @@ from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
-def personalized_train_ohio(epoch, l_type="mae"):
+def personalized_train_ohio(epoch, ph, l_type="mae"):
     # read in all patients data
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
@@ -26,7 +26,7 @@ def personalized_train_ohio(epoch, l_type="mae"):
         "ohio", "../data/OhioT1DM/2018/train/559-ws-training.xml", 5
     )
     sampling_horizon = 7
-    prediction_horizon = 12
+    prediction_horizon = ph
     scale = 0.01
     outtype = "Same"
     batch_size = 64
@@ -41,6 +41,9 @@ def personalized_train_ohio(epoch, l_type="mae"):
     for year in list(pid_year.keys()):
         pids = pid_year[year]
         for pid in pids:
+            # only check results of 2020 patients
+            if pid not in pid_2020:
+                continue
             # 100 is dumb if set_cutpoint is used
             train_pids = set(pid_2018 + pid_2020) - set([pid])
             local_train_data = []
@@ -149,9 +152,9 @@ def main():
     parser.add_argument("--epoch", type=int, default=2)
     args = parser.parse_args()
 
-    # train_ohio(args.train, args.epoch)
     for l_type in ["mse", "mape", "mae", "relative_mse"]:
-        personalized_train_ohio(args.epoch, l_type)
+        for ph in [6, 12]:
+            personalized_train_ohio(args.epoch, ph, l_type)
 
 
 if __name__ == "__main__":
