@@ -95,7 +95,7 @@ def compare_only_bg_result(l_type="mae", transfer=2):
     path = "../ohio_results/bg_ohio.xlsx"
     peers = ["khadem", "bevan", "joedicke", "ma"]
     result = dict()
-    result["metric"] = ["30min MAE", "30min RMSE", "60min MAE", "30min RMSE"]
+    result["metric"] = ["30min MAE", "30min RMSE", "60min MAE", "60min RMSE"]
     result["ours"] = res.mean().to_numpy()[1:]
     for p in peers:
         df = pd.read_excel(path, sheet_name=p)
