@@ -62,11 +62,20 @@ class CGMSData(object):
             return np.array(x), np.tile(y, [self.sampling_horizon, 1]).T
         raise ValueError("Unsupported padding " + padding)
 
-    def _scale(self):
-        self.train_x *= self.scale
-        self.train_y *= self.scale
-        self.test_x *= self.scale
-        self.test_y *= self.scale
+    def _scale(self, ohio_data):
+        if not ohio_data:
+            self.train_x *= self.scale
+            self.train_y *= self.scale
+            self.test_x *= self.scale
+            self.test_y *= self.scale
+        else:
+            # mean and std of training data of OhioT1DM, Bevan
+            mean = 158.288
+            std = 60.565
+            self.train_x = (self.train_x - mean) / std
+            self.train_y = (self.train_y - mean) / std
+            self.test_x = (self.test_x - mean) / std
+            self.test_y = (self.test_y - mean) / std
 
     def reset(
         self,

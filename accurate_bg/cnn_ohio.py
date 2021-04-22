@@ -76,7 +76,7 @@ def regressor(
     y_ = tf.compat.v1.placeholder(tf.float32, [None, sampling_horizon], name="y_")
 
     weights = tf.compat.v1.placeholder(tf.float32, [sampling_horizon], name="weights")
-    assert loss_type in ["mse", "mape", "mae", "relative_mse"]
+    assert loss_type in ["mse", "mape", "mae", "relative_mse", "rmse"]
     if loss_type == "mse":
         loss = tf.compat.v1.losses.mean_squared_error(
             y_,
@@ -92,6 +92,8 @@ def regressor(
         loss = tf.compat.v1.keras.losses.MAE(y_[:, 0], y[:, -1])
     elif loss_type == "relative_mse":
         loss = tf.math.reduce_mean((y_[:, 0] - y[:, -1]) ** 2 / y_[:, 0] ** 2)
+    elif loss_type == "rmse":
+        loss = tf.math.sqrt(tf.math.reduce_mean((y_[:, 0] - y[:, -1]) ** 2))
 
     # add L2 regularization
     L2_var = [
