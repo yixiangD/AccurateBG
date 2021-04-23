@@ -24,7 +24,7 @@ def regressor(
 ):
 
     batch_size = min(high_fid_data.train_n, batch_size)
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     sampling_horizon = low_fid_data.sampling_horizon
     x = tf.compat.v1.placeholder(tf.float32, [None, sampling_horizon], name="x")
     weights = tf.compat.v1.placeholder(tf.float32, [sampling_horizon], name="weights")
@@ -36,7 +36,7 @@ def regressor(
         y = attention_block(y, sampling_horizon)
         y = tf.squeeze(y)
 
-    with tf.variable_scope("fnn"):
+    with tf.compat.v1.variable_scope("fnn"):
         W = tf.Variable(
             tf.random.normal([sampling_horizon, nn_size], stddev=0.1), name="W"
         )
@@ -65,7 +65,7 @@ def regressor(
     # add L2 regularization
     L2_var = [
         var
-        for var in tf.global_variables()
+        for var in tf.compat.v1.global_variables()
         if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
     ]
 
@@ -74,7 +74,7 @@ def regressor(
     loss = tf.identity(loss + lossL2, name="loss")
     train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(loss)
 
-    tf.add_to_collections("optimizer", train)
+    tf.compat.v1.add_to_collections("optimizer", train)
 
     saver = tf.compat.v1.train.Saver()
     sess = tf.compat.v1.Session()
@@ -105,7 +105,7 @@ def classifier(
 
     batch_size = min(high_fid_data.train_n, batch_size)
     outdim = 2
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     sampling_horizon = low_fid_data.sampling_horizon
     if low_fid_data.feature is not None:
         sampling_horizon += low_fid_data.feature[0].size
@@ -120,7 +120,7 @@ def classifier(
         y = attention_block(y, sampling_horizon)
         y = tf.squeeze(y)
 
-    with tf.variable_scope("fnn"):
+    with tf.compat.v1.variable_scope("fnn"):
         W = tf.Variable(
             tf.random.normal([sampling_horizon, nn_size], stddev=0.1), name="W"
         )
@@ -139,11 +139,11 @@ def classifier(
 
     y_ = tf.compat.v1.placeholder(tf.float32, [None, outdim], name="y_")
 
-    loss = tf.losses.softmax_cross_entropy(y_, y)
+    loss = tf.compat.v1.losses.softmax_cross_entropy(y_, y)
     # add L2 regularization
     L2_var = [
         var
-        for var in tf.global_variables()
+        for var in tf.compat.v1.global_variables()
         if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
     ]
 
@@ -152,7 +152,7 @@ def classifier(
     loss = tf.identity(loss + lossL2, name="loss")
     train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(loss)
 
-    tf.add_to_collections("optimizer", train)
+    tf.compat.v1.add_to_collections("optimizer", train)
 
     saver = tf.compat.v1.train.Saver()
     sess = tf.compat.v1.Session()
@@ -185,11 +185,11 @@ def classifier_transfer(high_fid_data, batch_size, epoch, option=1):
     3. reuse attention weights, reinitialize FNN weights and train FNN only
     other: return ErrorMessage
     """
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph("pretrain.meta")
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph("pretrain.meta")
     saver.restore(sess, tf.train.latest_checkpoint("./"))
 
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     x = graph.get_tensor_by_name("x:0")
     y = graph.get_tensor_by_name("y:0")
     y_ = graph.get_tensor_by_name("y_:0")
@@ -198,28 +198,28 @@ def classifier_transfer(high_fid_data, batch_size, epoch, option=1):
     learning_rate = graph.get_tensor_by_name("learn_rate:0")
 
     if option == 1:
-        optimizer = tf.get_collection("optimizer")[0]
+        optimizer = tf.compat.v1.get_collection("optimizer")[0]
     elif option > 1:
         var_to_init = [
             var
-            for var in tf.global_variables()
+            for var in tf.compat.v1.global_variables()
             if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
         ]
         optimizer = tf.compat.v1.train.AdamOptimizer(
             learning_rate, name="newAdam"
         ).minimize(loss, var_list=var_to_init)
         uninitialized_vars = []
-        for var in tf.global_variables():
+        for var in tf.compat.v1.global_variables():
             try:
                 sess.run(var)
             except tf.errors.FailedPreconditionError:
                 uninitialized_vars.append(var)
-        sess.run(tf.variables_initializer(uninitialized_vars))
+        sess.run(tf.compat.v1.variables_initializer(uninitialized_vars))
 
         if option == 3:
             # reinitialize weights in FNN
             epoch *= 3
-            sess.run(tf.variables_initializer(var_to_init))
+            sess.run(tf.compat.v1.variables_initializer(var_to_init))
     for i in range(epoch):
         for _ in range(int(high_fid_data.train_n / batch_size)):
             d = high_fid_data.train_next_batch(batch_size)
@@ -240,7 +240,7 @@ def attention_block(x, sampling_horizon):
     p = tf.math.sin(tf.range(float(sampling_horizon)))
     xn = x + alpha * p
     xt = tf.reshape(xn, [-1, sampling_horizon, 1])
-    xprime = tf.nn.softmax(tf.matmul(xt, tf.transpose(xt, perm=[0, 2, 1])))
+    xprime = tf.nn.softmax(tf.matmul(xt, tf.transpose(a=xt, perm=[0, 2, 1])))
 
     w = tf.Variable(tf.random.normal([], stddev=0.1))
     att = w * tf.matmul(xprime, xt) + xt
@@ -263,11 +263,11 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
     3. reuse attention weights, reinitialize FNN weights and train FNN only
     other: return ErrorMessage
     """
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph("pretrain.meta")
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph("pretrain.meta")
     saver.restore(sess, tf.train.latest_checkpoint("./"))
 
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     x = graph.get_tensor_by_name("x:0")
     # y = graph.get_tensor_by_name("y:0")
     y_ = graph.get_tensor_by_name("y_:0")
@@ -276,28 +276,28 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
     learning_rate = graph.get_tensor_by_name("learn_rate:0")
 
     if option == 1:
-        optimizer = tf.get_collection("optimizer")[0]
+        optimizer = tf.compat.v1.get_collection("optimizer")[0]
     elif option > 1:
         var_to_init = [
             var
-            for var in tf.global_variables()
+            for var in tf.compat.v1.global_variables()
             if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
         ]
         optimizer = tf.compat.v1.train.AdamOptimizer(
             learning_rate, name="newAdam"
         ).minimize(loss, var_list=var_to_init)
         uninitialized_vars = []
-        for var in tf.global_variables():
+        for var in tf.compat.v1.global_variables():
             try:
                 sess.run(var)
             except tf.errors.FailedPreconditionError:
                 uninitialized_vars.append(var)
-        sess.run(tf.variables_initializer(uninitialized_vars))
+        sess.run(tf.compat.v1.variables_initializer(uninitialized_vars))
 
         if option == 3:
             # reinitialize weights in FNN
             epoch *= 3
-            sess.run(tf.variables_initializer(var_to_init))
+            sess.run(tf.compat.v1.variables_initializer(var_to_init))
     for i in range(epoch):
         for _ in range(int(high_fid_data.train_n / batch_size)):
             d = high_fid_data.train_next_batch(batch_size)

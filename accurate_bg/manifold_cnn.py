@@ -27,7 +27,7 @@ def regressor(
     beta,
 ):
 
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     batch_size = min(high_fid_data.train_n, batch_size)
     learn_rate = tf.constant(learning_rate, name="learn_rate")
     print(f"Learning rate: {learn_rate}")
@@ -44,11 +44,11 @@ def regressor(
     # tf.cond(pred, true_fn, false_fn)
     mixup_alpha = low_fid_data.alpha
     mixup_beta = tf.compat.v1.placeholder(tf.float32, [], name="mixup_beta")
-    indices = tf.random.shuffle(tf.range(tf.shape(x)[0]))
+    indices = tf.random.shuffle(tf.range(tf.shape(input=x)[0]))
     y = tf.cond(
-        mixup_flag[0],
-        lambda: mixup_beta * x + (1 - mixup_beta) * tf.gather(x, indices),
-        lambda: x,
+        pred=mixup_flag[0],
+        true_fn=lambda: mixup_beta * x + (1 - mixup_beta) * tf.gather(x, indices),
+        false_fn=lambda: x,
     )
     # position embedding
     alpha = tf.Variable(tf.random.normal([], stddev=0.1))
@@ -65,34 +65,39 @@ def regressor(
 
         kernel1 = tf.Variable(tf.random.normal([k_size, 1, 1], stddev=0.1))
         kernel2 = tf.Variable(tf.random.normal([k_size, 1, 1], stddev=0.1))
-        A = tf.squeeze(tf.nn.conv1d(data, kernel1, 1, "VALID"))
-        B = tf.squeeze(tf.nn.conv1d(data, kernel2, 1, "VALID"))
+        A = tf.squeeze(
+            tf.nn.conv1d(input=data, filters=kernel1, stride=1, padding="VALID")
+        )
+        B = tf.squeeze(
+            tf.nn.conv1d(input=data, filters=kernel2, stride=1, padding="VALID")
+        )
         y = tf.cond(
-            mixup_flag[i + 1],
-            lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
-            lambda: y,
+            pred=mixup_flag[i + 1],
+            true_fn=lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
+            false_fn=lambda: y,
         )
         y = tf.math.multiply(A, tf.sigmoid(B)) + y
 
     # FNN
-    with tf.variable_scope("fnn"):
+    with tf.compat.v1.variable_scope("fnn"):
         W = tf.Variable(
             tf.random.normal([sampling_horizon, nn_size], stddev=0.1), name="W"
         )
         b = tf.Variable(tf.random.normal([nn_size], stddev=0.1), name="b")
         y = tf.cond(
-            mixup_flag[nblock + 1],
-            lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
-            lambda: y,
+            pred=mixup_flag[nblock + 1],
+            true_fn=lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
+            false_fn=lambda: y,
         )
         y = tf.nn.relu(tf.tensordot(y, W, [[1], [0]]) + b)
         for i in range(nn_layer - 1):
             W = tf.Variable(tf.random.normal([nn_size, nn_size], stddev=0.1), name="W")
             b = tf.Variable(tf.random.normal([nn_size], stddev=0.1), name="b")
             y = tf.cond(
-                mixup_flag[nblock + 1 + i],
-                lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
-                lambda: y,
+                pred=mixup_flag[nblock + 1 + i],
+                true_fn=lambda: mixup_beta * y
+                + (1 - mixup_beta) * tf.gather(y, indices),
+                false_fn=lambda: y,
             )
             y = tf.nn.relu(tf.tensordot(y, W, [[1], [0]]) + b)
 
@@ -101,9 +106,9 @@ def regressor(
         )
         b = tf.Variable(tf.random.normal([], stddev=0.1), name="b")
         y = tf.cond(
-            mixup_flag[nblock + nn_layer],
-            lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
-            lambda: y,
+            pred=mixup_flag[nblock + nn_layer],
+            true_fn=lambda: mixup_beta * y + (1 - mixup_beta) * tf.gather(y, indices),
+            false_fn=lambda: y,
         )
         y = tf.tensordot(y, W, [[1], [0]]) + b
 
@@ -119,7 +124,7 @@ def regressor(
     # add L2 regularization
     L2_var = [
         var
-        for var in tf.global_variables()
+        for var in tf.compat.v1.global_variables()
         if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
     ]
 
@@ -131,9 +136,9 @@ def regressor(
     new_train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(
         loss, var_list=L2_var
     )
-    tf.add_to_collections("optimizer", train)
-    tf.add_to_collections("optimizer", new_train)
-    tf.add_to_collections("const", mixup_size)
+    tf.compat.v1.add_to_collections("optimizer", train)
+    tf.compat.v1.add_to_collections("optimizer", new_train)
+    tf.compat.v1.add_to_collections("const", mixup_size)
 
     saver = tf.compat.v1.train.Saver()
     sess.run(tf.compat.v1.global_variables_initializer())
@@ -181,11 +186,11 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
     3. reuse seq2seq weights, reinitialize FNN weights and train FNN only
     other: return ErrorMessage
     """
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph("pretrain.meta")
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph("pretrain.meta")
     saver.restore(sess, tf.train.latest_checkpoint("./"))
 
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     x = graph.get_tensor_by_name("x:0")
     weights = graph.get_tensor_by_name("weights:0")
     loss = graph.get_tensor_by_name("loss:0")
@@ -194,23 +199,23 @@ def regressor_transfer(high_fid_data, batch_size, epoch, option=1):
     mixup_flag = graph.get_tensor_by_name("mixup_flag:0")
     mixup_beta = graph.get_tensor_by_name("mixup_beta:0")
     # learning_rate = graph.get_tensor_by_name("learn_rate:0")
-    mixup_size = tf.get_collection("const")[0]
+    mixup_size = tf.compat.v1.get_collection("const")[0]
     mixup_alpha = high_fid_data.alpha
 
     if option == 1:
-        optimizer = tf.get_collection("optimizer")[0]
+        optimizer = tf.compat.v1.get_collection("optimizer")[0]
     elif option == 2:
-        optimizer = tf.get_collection("optimizer")[1]
+        optimizer = tf.compat.v1.get_collection("optimizer")[1]
     elif option == 3:
-        optimizer = tf.get_collection("optimizer")[1]
-        var = tf.global_variables()
+        optimizer = tf.compat.v1.get_collection("optimizer")[1]
+        var = tf.compat.v1.global_variables()
         var_to_init = [
             val
             for val in var
             if ("fnn/W" in val.name or "fnn/b" in val.name) and "Adam" not in val.name
         ]
         epoch *= 3
-        sess.run(tf.variables_initializer(var_to_init))
+        sess.run(tf.compat.v1.variables_initializer(var_to_init))
     else:
         print("option not available, please assign 1 or 2 or 3 to option")
         return
@@ -261,7 +266,7 @@ def classifier(
     beta,
 ):
 
-    tf.reset_default_graph()
+    tf.compat.v1.reset_default_graph()
     batch_size = min(high_fid_data.train_n, batch_size)
     outdim = 3
 
@@ -288,12 +293,16 @@ def classifier(
 
         kernel1 = tf.Variable(tf.random.normal([k_size, 1, 1], stddev=0.1))
         kernel2 = tf.Variable(tf.random.normal([k_size, 1, 1], stddev=0.1))
-        A = tf.squeeze(tf.nn.conv1d(data, kernel1, 1, "VALID"))
-        B = tf.squeeze(tf.nn.conv1d(data, kernel2, 1, "VALID"))
+        A = tf.squeeze(
+            tf.nn.conv1d(input=data, filters=kernel1, stride=1, padding="VALID")
+        )
+        B = tf.squeeze(
+            tf.nn.conv1d(input=data, filters=kernel2, stride=1, padding="VALID")
+        )
         y = tf.math.multiply(A, tf.sigmoid(B)) + y
 
     # FNN
-    with tf.variable_scope("fnn"):
+    with tf.compat.v1.variable_scope("fnn"):
         W = tf.Variable(
             tf.random.normal([sampling_horizon, nn_size], stddev=0.1), name="W"
         )
@@ -311,12 +320,12 @@ def classifier(
 
     y_ = tf.compat.v1.placeholder(tf.float32, [None, outdim], name="y_")
 
-    loss = tf.losses.softmax_cross_entropy(y_, y)
+    loss = tf.compat.v1.losses.softmax_cross_entropy(y_, y)
 
     # add L2 regularization
     L2_var = [
         var
-        for var in tf.global_variables()
+        for var in tf.compat.v1.global_variables()
         if ("fnn/W" in var.name or "fnn/b" in var.name) and "Adam" not in var.name
     ]
 
@@ -328,8 +337,8 @@ def classifier(
     new_train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(
         loss, var_list=[W, b]
     )
-    tf.add_to_collections("optimizer", train)
-    tf.add_to_collections("optimizer", new_train)
+    tf.compat.v1.add_to_collections("optimizer", train)
+    tf.compat.v1.add_to_collections("optimizer", new_train)
 
     saver = tf.compat.v1.train.Saver()
     sess.run(tf.compat.v1.global_variables_initializer())
@@ -358,30 +367,30 @@ def classifier_transfer(high_fid_data, batch_size, epoch, option=1):
     3. reuse seq2seq weights, reinitialize FNN weights and train FNN only
     other: return ErrorMessage
     """
-    sess = tf.Session()
-    saver = tf.train.import_meta_graph("pretrain.meta")
+    sess = tf.compat.v1.Session()
+    saver = tf.compat.v1.train.import_meta_graph("pretrain.meta")
     saver.restore(sess, tf.train.latest_checkpoint("./"))
 
-    graph = tf.get_default_graph()
+    graph = tf.compat.v1.get_default_graph()
     x = graph.get_tensor_by_name("x:0")
     y = graph.get_tensor_by_name("y:0")
     y_ = graph.get_tensor_by_name("y_:0")
 
     loss = graph.get_tensor_by_name("loss:0")
-    train = tf.get_collection("optimizer")[0]
-    new_train = tf.get_collection("optimizer")[1]
+    train = tf.compat.v1.get_collection("optimizer")[0]
+    new_train = tf.compat.v1.get_collection("optimizer")[1]
     if option == 1:
         optimizer = train
     elif option == 2:
         optimizer = new_train
     elif option == 3:
         optimizer = new_train
-        var = tf.global_variables()
+        var = tf.compat.v1.global_variables()
         var_to_init = [
             val for val in var if ("fnn/W" in val.name or "fnn/b" in val.name)
         ]
         epoch *= 3
-        sess.run(tf.variables_initializer(var_to_init))
+        sess.run(tf.compat.v1.variables_initializer(var_to_init))
     else:
         print("option not available, please assign 1 or 2 or 3 to option")
         return

@@ -83,7 +83,7 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
                 1,
                 True,
             )
-            regressor(train_dataset, *argv, l_type)
+            regressor(train_dataset, *argv, l_type, outdir)
             # fine-tune on personal data
             target_test_dataset = CGMSDataSeg(
                 "ohio", f"../data/OhioT1DM/{year}/test/{pid}-ws-testing.xml", 5
@@ -114,7 +114,7 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
                 1,
                 True,
             )
-            err, labels = test_ckpt(target_test_dataset)
+            err, labels = test_ckpt(target_test_dataset, outdir)
             errs = [err]
             transfer_res = [labels]
             for i in range(1, 4):
@@ -123,6 +123,7 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
                     target_test_dataset,
                     config["batch_size"],
                     epoch,
+                    outdir,
                     i,
                 )
                 errs.append(err)
