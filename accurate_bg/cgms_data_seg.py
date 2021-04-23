@@ -70,7 +70,7 @@ class CGMSDataSeg(CGMSData):
         smooth,
         padding,
         target_weight,
-        ohio_data=False,
+        standardize=False,
     ):
         self.sampling_horizon = sampling_horizon
         self.prediction_horizon = prediction_horizon
@@ -136,7 +136,7 @@ class CGMSDataSeg(CGMSData):
         else:
             print("Test data is empty...")
         print("#" * 80)
-        self._scale(ohio_data)
+        self._scale(standardize)
 
         self.train_weights = None
         if padding != "None":

@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 
 import numpy as np
@@ -7,7 +8,7 @@ from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
-def personalized_train_ohio(epoch, ph, l_type="mae", path="../ouput"):
+def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
     # read in all patients data
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
@@ -37,12 +38,21 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../ouput"):
     prediction_horizon = ph
     scale = 0.01
     outtype = "Same"
-    batch_size = 64
     # train on training dataset
     # k_size, nblock, nn_size, nn_layer, learning_rate, batch_size, epoch, beta
-    argv = (4, 4, 10, 2, 1e-3, batch_size, epoch, 1e-4)
+    with open(os.path.join(path, "config.json")) as json_file:
+        config = json.load(json_file)
+    argv = (
+        config["k_size"],
+        config["nblock"],
+        config["nn_size"],
+        config["nn_layer"],
+        config["learning_rate"],
+        config["batch_size"],
+        epoch,
+        config["beta"],
+    )
     # test on patients data
-    # outdir = f"../ohio_results/
     outdir = os.path.join(path, f"ph_{prediction_horizon}_{l_type}")
     if not os.path.exists(outdir):
         os.makedirs(outdir)
@@ -109,7 +119,11 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../ouput"):
             transfer_res = [labels]
             for i in range(1, 4):
                 err, labels = regressor_transfer(
-                    target_train_dataset, target_test_dataset, batch_size, epoch, i
+                    target_train_dataset,
+                    target_test_dataset,
+                    config["batch_size"],
+                    epoch,
+                    i,
                 )
                 errs.append(err)
                 transfer_res.append(labels)
@@ -129,10 +143,10 @@ def main():
     parser.add_argument("--train", action="store_true")
     parser.add_argument("--epoch", type=int, default=2)
     parser.add_argument("--prediction_horizon", type=int, default=6)
+    parser.add_argument("--outdir", type=str, default="../ohio_results")
     args = parser.parse_args()
 
-    for l_type in ["rmse"]:
-        personalized_train_ohio(args.epoch, args.prediction_horizon, l_type)
+    personalized_train_ohio(args.epoch, args.prediction_horizon, "mae", args.outdir)
 
 
 if __name__ == "__main__":

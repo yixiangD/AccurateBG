@@ -20,7 +20,7 @@ def regressor(
     nblock,
     nn_size,
     nn_layer,
-    learning_rate,
+    start_learning_rate,
     batch_size,
     epoch,
     beta,
@@ -105,6 +105,9 @@ def regressor(
     lossL2 = tf.math.add_n([tf.nn.l2_loss(v) for v in L2_var]) * beta
 
     loss = tf.identity(loss + lossL2, name="loss")
+    learning_rate = tf.compat.v1.train.exponential_decay(
+        start_learning_rate, epoch, epoch / 5
+    )
 
     train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(loss)
     new_train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(
