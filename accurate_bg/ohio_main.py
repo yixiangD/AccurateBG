@@ -8,7 +8,7 @@ from cnn_ohio import regressor, regressor_transfer, test_ckpt
 from data_reader import DataReader
 
 
-def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
+def personalized_train_ohio(epoch, ph, path="../output"):
     # read in all patients data
     pid_2018 = [559, 563, 570, 588, 575, 591]
     pid_2020 = [540, 552, 544, 567, 584, 596]
@@ -52,6 +52,7 @@ def personalized_train_ohio(epoch, ph, l_type="mae", path="../output"):
         epoch,
         config["beta"],
     )
+    l_type = config["loss"]
     # test on patients data
     outdir = os.path.join(path, f"ph_{prediction_horizon}_{l_type}")
     if not os.path.exists(outdir):
@@ -147,7 +148,7 @@ def main():
     parser.add_argument("--outdir", type=str, default="../ohio_results")
     args = parser.parse_args()
 
-    personalized_train_ohio(args.epoch, args.prediction_horizon, "mae", args.outdir)
+    personalized_train_ohio(args.epoch, args.prediction_horizon, args.outdir)
 
 
 if __name__ == "__main__":

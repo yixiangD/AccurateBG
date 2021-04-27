@@ -14,5 +14,7 @@ format:
 	black accurate_bg/
 	flake8 accurate_bg/
 	flake8 time-gan/
+	black sub_job.py
+	flake8 sub_job.py
 
 .PHONY: dev check

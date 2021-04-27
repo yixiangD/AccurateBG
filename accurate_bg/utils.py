@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_result(l_type="mae", ph=6, ind=0, path="ohio_results"):
+def get_result(l_type="mae", ph=6, ind=0, path="ohio_results", standard=True):
     path = f"{path}/ph_{ph}_{l_type}"
     # pids = [552, 544, 567, 584, 596, 559,
     #       563, 570, 588, 575, 591, 540]
@@ -26,7 +26,10 @@ def get_result(l_type="mae", ph=6, ind=0, path="ohio_results"):
         rmses.append(rmse)
     maes = np.array(maes)
     rmses = np.array(rmses)
-    coeff = 60.565
+    if standard:
+        coeff = 60.65
+    else:
+        coeff = 100
     best_maes = coeff * maes[:, ind]
     best_rmses = coeff * rmses[:, ind]
     df = pd.DataFrame(
@@ -89,9 +92,11 @@ def compare_result(l_type):
         print(col, new_df.index[new_df["Paper ID"] == "ours"])
 
 
-def compare_only_bg_result(l_type="mae", transfer=2, path="../ohio_results"):
-    res_30 = get_result(l_type, 6, transfer, path)
-    res_60 = get_result(l_type, 12, transfer, path)
+def compare_only_bg_result(
+    l_type="mae", transfer=2, path="../ohio_results", standard=True
+):
+    res_30 = get_result(l_type, 6, transfer, path, standard)
+    res_60 = get_result(l_type, 12, transfer, path, standard)
     res = pd.merge(res_30, res_60, how="left", on="PID")
     path = "../ohio_results/bg_ohio.xlsx"
     peers = ["khadem", "bevan", "joedicke", "ma"]
@@ -109,13 +114,8 @@ def compare_only_bg_result(l_type="mae", transfer=2, path="../ohio_results"):
 
 def main():
     # get_pbp_result()
-    for i in range(4):
-        # compare_only_bg_result("rmse",i,"../ouput")
-        for l in ["mse", "rmse"]:
-            # compare_only_bg_result(l,i,"../output2")
-            compare_only_bg_result(l, i, "../output1")
-    exit()
-    # compare_result("mae")
+    # compare_only_bg_result("mae", 2, f"../ohio_results")
+    compare_only_bg_result("mae", 2, "../output", True)
     exit()
     for l_type in ["mse", "mape", "mae", "relative_mse"]:
         print(l_type)
