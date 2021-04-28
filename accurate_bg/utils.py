@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from sklearn.metrics import confusion_matrix
 
 
 def get_result(l_type="mae", ph=6, ind=0, path="ohio_results", standard=True):
@@ -38,8 +39,8 @@ def get_result(l_type="mae", ph=6, ind=0, path="ohio_results", standard=True):
     return df
 
 
-def get_pbp_result(ph=6, l_type="mse", ind=2):
-    path = f"../ohio_results/ph_{ph}_{l_type}"
+def get_pbp_result(l_type="mse", ph=6, ind=2, path="ohio_results", standard=True):
+    path = f"{path}/ph_{ph}_{l_type}"
     # pids = [552, 544, 567, 584, 596, 559,
     #       563, 570, 588, 575, 591, 540]
     pids = [
@@ -57,14 +58,18 @@ def get_pbp_result(ph=6, l_type="mse", ind=2):
     data = np.concatenate(data, axis=0)
     mae = np.mean(np.abs(data[:, 1:8:2] - data[:, 0:8:2]), axis=0)
     rmse = np.sqrt(np.mean(np.power(data[:, 1:8:2] - data[:, 0:8:2], 2), axis=0))
-    return 100 * mae[ind], 100 * rmse[ind]
+    if standard:
+        coeff = 60.65
+    else:
+        coeff = 100
+    return coeff * mae[ind], coeff * rmse[ind]
 
 
 def compare_result(l_type):
     path = "../ohio_results/challenge.csv"
     df = pd.read_csv(path)
-    mae1, rmse1 = get_pbp_result(6, l_type)
-    mae2, rmse2 = get_pbp_result(12, l_type)
+    mae1, rmse1 = get_pbp_result(l_type, 6)
+    mae2, rmse2 = get_pbp_result(l_type, 12)
     df = df.append(
         {
             "Paper ID": "ours",
@@ -112,10 +117,53 @@ def compare_only_bg_result(
     print(result.sum())
 
 
+def check_classification(path, ind=2, standard=True, threshold=80):
+    pids = [
+        540,
+        544,
+        552,
+        567,
+        584,
+        596,
+    ]
+    std, mean = 60.565, 158.288
+    res = []
+    for pid in pids:
+        arr = np.loadtxt(os.path.join(path, str(pid) + ".txt"))
+        pred = arr[:, 1:8:2]
+        true = arr[:, 0:8:2]
+        if standard:
+            pred = pred * std + mean
+            true = true * std + mean
+        else:
+            pred *= 100
+            true *= 100
+        pred_label = (pred[:, ind] < threshold).astype(int)
+        true_label = (true[:, ind] < threshold).astype(int)
+        # print(pred_label)
+        tn, fp, fn, tp = confusion_matrix(true_label, pred_label).ravel()
+        accuracy = (tn + tp) / (tn + fp + fn + tp)
+        sensitivity = tp / (tp + fn)
+        precision = tp / (tp + fp)
+        f1 = tp / (tp + 1 / 2 * (fp + fn))
+        print(pid, accuracy, sensitivity, precision)
+        res.append([accuracy, sensitivity, precision, f1])
+    res = np.array(res)
+    print(np.mean(res, axis=0))
+
+
 def main():
     # get_pbp_result()
-    # compare_only_bg_result("mae", 2, f"../ohio_results")
-    compare_only_bg_result("mae", 2, "../output", True)
+    for i in range(4):
+        print(i)
+        # check_classification("../output/ph_6_rmse", i, True)
+        check_classification("../output/ph_6_rmse+mae", i, True)
+        # check_classification("../output/ph_6_mae", i, False)
+        # check_classification("../ohio_results/ph_12_mae", i, False)
+    #    exit()
+    for i in range(4):
+        compare_only_bg_result("rmse+mae", i, "../output", True)
+    # compare_result("mae")
     exit()
     for l_type in ["mse", "mape", "mae", "relative_mse"]:
         print(l_type)
