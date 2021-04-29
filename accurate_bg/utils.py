@@ -28,7 +28,7 @@ def get_result(l_type="mae", ph=6, ind=0, path="ohio_results", standard=True):
     maes = np.array(maes)
     rmses = np.array(rmses)
     if standard:
-        coeff = 60.65
+        coeff = 60.565
     else:
         coeff = 100
     best_maes = coeff * maes[:, ind]
@@ -59,7 +59,7 @@ def get_pbp_result(l_type="mse", ph=6, ind=2, path="ohio_results", standard=True
     mae = np.mean(np.abs(data[:, 1:8:2] - data[:, 0:8:2]), axis=0)
     rmse = np.sqrt(np.mean(np.power(data[:, 1:8:2] - data[:, 0:8:2], 2), axis=0))
     if standard:
-        coeff = 60.65
+        coeff = 60.565
     else:
         coeff = 100
     return coeff * mae[ind], coeff * rmse[ind]
@@ -154,20 +154,19 @@ def check_classification(path, ind=2, standard=True, threshold=80):
 
 def main():
     # get_pbp_result()
+    import sys
+
+    index = sys.argv[1]
+    path = f"../old{index}"
+    standard = False
     for i in range(4):
         print(i)
         # check_classification("../output/ph_6_rmse", i, True)
-        check_classification("../output/ph_6_rmse+mae", i, True)
+        check_classification(f"{path}/ph_6_mae", i, standard)
         # check_classification("../output/ph_6_mae", i, False)
         # check_classification("../ohio_results/ph_12_mae", i, False)
-    #    exit()
     for i in range(4):
-        compare_only_bg_result("rmse+mae", i, "../output", True)
-    # compare_result("mae")
-    exit()
-    for l_type in ["mse", "mape", "mae", "relative_mse"]:
-        print(l_type)
-        compare_result(l_type)
+        compare_only_bg_result("mae", i, path, standard)
 
 
 if __name__ == "__main__":

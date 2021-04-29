@@ -13,7 +13,7 @@ def regressor(
     nblock,
     nn_size,
     nn_layer,
-    start_learning_rate,
+    learning_rate,
     batch_size,
     epoch,
     beta,
@@ -75,7 +75,7 @@ def regressor(
     y_ = tf.compat.v1.placeholder(tf.float32, [None, sampling_horizon], name="y_")
 
     weights = tf.compat.v1.placeholder(tf.float32, [sampling_horizon], name="weights")
-    assert loss_type in ["mse", "mape", "mae", "relative_mse", "rmse"]
+    assert loss_type in ["mse", "mape", "mae", "relative_mse", "rmse", "rmse+mae"]
     if loss_type == "mse":
         loss = tf.compat.v1.losses.mean_squared_error(
             y_,
@@ -97,6 +97,17 @@ def regressor(
         loss = tf.math.sqrt(
             tf.math.reduce_mean(input_tensor=(y_[:, 0] - y[:, -1]) ** 2)
         )
+    elif loss_type == "rmse+mae":
+        rmse_loss = tf.math.sqrt(
+            tf.math.reduce_mean(input_tensor=(y_[:, 0] - y[:, -1]) ** 2)
+        )
+        mae_loss = tf.compat.v1.losses.mean_squared_error(
+            y_,
+            y,
+            weights=tf.expand_dims(weights, axis=0),
+            reduction=tf.compat.v1.losses.Reduction.MEAN,
+        )
+        loss = rmse_loss + mae_loss
 
     # add L2 regularization
     L2_var = [
@@ -108,9 +119,6 @@ def regressor(
     lossL2 = tf.math.add_n([tf.nn.l2_loss(v) for v in L2_var]) * beta
 
     loss = tf.identity(loss + lossL2, name="loss")
-    learning_rate = tf.compat.v1.train.exponential_decay(
-        start_learning_rate, epoch, epoch / 5, 0.96
-    )
 
     train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(loss)
     new_train = tf.compat.v1.train.AdamOptimizer(learning_rate).minimize(

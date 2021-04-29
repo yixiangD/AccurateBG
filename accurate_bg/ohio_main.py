@@ -23,6 +23,7 @@ def personalized_train_ohio(epoch, ph, path="../output"):
             train_data[pid] = reader.read()
     # add test data of 2018 patient
     use_2018_test = True
+    standard = False  # do not use standard
     test_data_2018 = []
     for pid in pid_2018:
         reader = DataReader(
@@ -82,7 +83,7 @@ def personalized_train_ohio(epoch, ph, path="../output"):
                 False,
                 outtype,
                 1,
-                True,
+                standard,
             )
             regressor(train_dataset, *argv, l_type, outdir)
             # fine-tune on personal data
@@ -98,7 +99,7 @@ def personalized_train_ohio(epoch, ph, path="../output"):
                 False,
                 outtype,
                 1,
-                True,
+                standard,
             )
             target_train_dataset = CGMSDataSeg(
                 "ohio", f"../data/OhioT1DM/{year}/train/{pid}-ws-training.xml", 5
@@ -113,7 +114,7 @@ def personalized_train_ohio(epoch, ph, path="../output"):
                 False,
                 outtype,
                 1,
-                True,
+                standard,
             )
             err, labels = test_ckpt(target_test_dataset, outdir)
             errs = [err]
