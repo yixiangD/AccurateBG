@@ -143,7 +143,6 @@ def personalized_train_ohio(epoch, ph, path="../output"):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--train", action="store_true")
     parser.add_argument("--epoch", type=int, default=2)
     parser.add_argument("--prediction_horizon", type=int, default=6)
     parser.add_argument("--outdir", type=str, default="../ohio_results")

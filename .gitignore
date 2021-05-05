@@ -134,4 +134,3 @@ pretrain.*
 checkpoint
 *.txt
 data/
-ohio_results
