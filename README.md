@@ -1,5 +1,5 @@
 # Accurate BG
-Accurate blood glucose prediction for diabetic patients using deep learning
+Repository for paper [Deep transfer learning and data augmentation improve glucose levels prediction in type 2 diabetes patients](https://www.nature.com/articles/s41746-021-00480-x).
 ## Installation
 We recommend you create a virtual environment via `Anaconda` or `Pyenv`, then
 activate the virtual environment and run
@@ -23,4 +23,18 @@ the default prediction horizon is 6, equivalently 30 min. To adjust to 1hr, modi
 the last line of command with
 ```
 >> python3 ohio_man.py --epoch 150 --prediction_horizon 12
+```
+## Reference
+If you find this repo or our work helpful, we encourage you to cite the paper below.
+```
+@article{deng2021deep,
+  title={Deep transfer learning and data augmentation improve glucose levels prediction in type 2 diabetes patients},
+  author={Deng, Yixiang and Lu, Lu and Aponte, Laura and Angelidi, Angeliki M and Novak, Vera and Karniadakis, George Em and Mantzoros, Christos S},
+  journal={NPJ Digital Medicine},
+  volume={4},
+  number={1},
+  pages={1--13},
+  year={2021},
+  publisher={Nature Publishing Group}
+}
 ```
