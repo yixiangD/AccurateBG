@@ -17,12 +17,12 @@ Then, download the public dataset *OhioT1DM* [here](http://smarthealth.cs.ohio.e
 To train and test for the *OhioT1DM* dataset, with our optimal configuration, run
 ```
 >> cd accurate_bg
->> python3 ohio_man.py --epoch 150
+>> python3 ohio_main.py --epoch 150
 ```
-the default prediction horizon is 6, equivalently 30 min. To adjust to 1hr, modify
-the last line of command with
+the default prediction horizon is 6, equivalently 30 min. To adjust prediction horizon to 1hr, modify
+the last line of command in the code block above with
 ```
->> python3 ohio_man.py --epoch 150 --prediction_horizon 12
+>> python3 ohio_main.py --epoch 150 --prediction_horizon 12
 ```
 ## Reference
 If you find this repo or our work helpful, we encourage you to cite the paper below.
