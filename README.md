@@ -1,6 +1,7 @@
 # Accurate BG
 Repository for paper [Deep transfer learning and data augmentation improve glucose levels prediction in type 2 diabetes patients](https://www.nature.com/articles/s41746-021-00480-x).
-![Setup](figs/setup.pdf)
+
+![Setup](figs/setup.jpg)
 ## Installation
 We recommend you create a virtual environment via `Anaconda` or `Pyenv`, then
 activate the virtual environment and run
