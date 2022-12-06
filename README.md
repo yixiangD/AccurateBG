@@ -14,7 +14,7 @@ To test for the OhioT1DM dataset, create a folder named `data` at the root direc
 ```
 >> mkdir data/
 ```
-Then, download the public dataset *OhioT1DM* [here](http://smarthealth.cs.ohio.edu/OhioT1DM-dataset.html), and move the unzipped folder `OhioT1DM` into `data`.
+Then, download the public dataset *OhioT1DM* [here](http://smarthealth.cs.ohio.edu/OhioT1DM-dataset.html), and move the unzipped folder `OhioT1DM` into `data`. (Note that to use the dataset, you need to apply for it with the link provided and we are unfortunately not able to provide the dataset for you.)
 
 To train and test for the *OhioT1DM* dataset, with our optimal configuration, run
 ```
