@@ -39,7 +39,8 @@ class MixUp:
         if len(data_y.shape) == 1:
             data_y = data_y[:, None]
         data = np.hstack((data_x, data_y))
-        new_data = np.repeat(data, self.m, axis=0)
+        old_data = np.repeat(data, self.m, axis=0)
+        new_data = np.random.shuffle(old_data)
         lmbda = np.random.beta(self.alpha, self.alpha, size=num_data * self.m)[:, None]
-        new_data = lmbda * new_data + (1 - lmbda) * new_data
+        new_data = lmbda * old_data + (1 - lmbda) * new_data
         return new_data[:, :indata_dim], new_data[:, indata_dim:]
